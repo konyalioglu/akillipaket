@@ -37,6 +37,7 @@ setup(
             'LevelCalibration = akillipaket.levelCalibration:main',
             'LOG  = akillipaket.LOG_Node:main',
             'StateEstimator = akillipaket.KALMAN_Node:main',
+            'StateEstimator2 = akillipaket.KALMAN_Node2:main',
             'MotorNode = akillipaket.MOTOR_Node:main',
             'Control = akillipaket.Control_Node:main',
         ],
