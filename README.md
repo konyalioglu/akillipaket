@@ -17,9 +17,10 @@ To calibrate the camera one can run 'cameraCalibration' node,
 ros2 run calibration cameraCalibration
 ```
 
-During calibration, a 9x6 chess board will be required. To use chess board with different size, one can change the line given as follows
+During calibration, a 9x6 chess board will be required. To use chess board with different size, one can change the lines given as follow
 
 https://github.com/konyalioglu/akillipaket/blob/ed3229e4b82e65f000ef5bb587e6bae1579189b8/calibration/cameraCalibration.py#L49
+https://github.com/konyalioglu/akillipaket/blob/ed3229e4b82e65f000ef5bb587e6bae1579189b8/calibration/cameraCalibration.py#L50
 
 ### Gyro Calibration
 
