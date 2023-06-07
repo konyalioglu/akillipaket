@@ -49,10 +49,31 @@ ros2 run calibration levelCalibration
 During the calibration process, the sensor should be still.
 
 ## Running the package
+The package has two sensor configuration. Either BNO055 or MPU9250 can be installed.
 
+For the BNO055 installed hardware, one should launch 
+
+```
+ros2 launch akillipaket test_BNO055.launch.py
+```
+
+or 
+
+```
+ros2 launch akillipaket test_MPU6050.launch.py
+```
+
+for MPU9250 installed hardware.
 
 ## Drivers
 - MPU6050 Driver - I2Cdev library collection - MPU6050 I2C device class by Jeff Rowberg <jeff@rowberg.net>
 
 ## References
 - https://docs.opencv.org/4.x/dc/dbb/tutorial_py_calibration.html
+
+## Requirements
+- https://github.com/flynneva/bno055
+- https://github.com/konyalioglu/bmp180_ros2_foxy/tree/main
+
+
+## Arduino serial communication
