@@ -92,7 +92,7 @@ class ControlNode(Node):
         pwm1 = control_signal1 / 2 - control_signal2 / 2 + self.pwm_idle
         pwm2 = control_signal1 / 2 + control_signal2 / 2 + self.pwm_idle
 
-        self.get_logger().info(str(heading_ref) + ' ' + str(data[9]) + ' ' + str(psidot_signal)+ ' ' + str(data[14]) + ' ' + str(pwm1) + ' '+str(pwm2))
+        #self.get_logger().info(str(heading_ref) + ' ' + str(data[9]) + ' ' + str(psidot_signal)+ ' ' + str(data[14]) + ' ' + str(pwm1) + ' '+str(pwm2))
 
         return pwm1, pwm2
 

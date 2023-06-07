@@ -2,6 +2,7 @@ import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Float64MultiArray, Float32
 from sensor_msgs.msg import Imu
+from geometry_msgs.msg import Quaternion
 from .Sensor_Fusion.Kalman_Filter import State_Estimation
 import numpy as np
 from .utils import *
@@ -9,10 +10,11 @@ from .utils import *
 
 class KalmanFilter(Node):
     def __init__(self):
+
         super().__init__('kalman_node')
         self.dt = 0.02
-        self.subscription_mag = self.create_subscription(Float32, '/akillipaket/IMU/Magnetometer', self.__mag_callback, 4)
-        self.subscription_imu = self.create_subscription(Imu, '/akillipaket/IMU/Sensor_Data', self.__imu_callback, 4)
+
+        self.subscription_imu = self.create_subscription(Imu, '/bno055/imu', self.__imu_callback, 4)
         self.subscription_gps = self.create_subscription(Float64MultiArray, '/akillipaket/GPS/fix', self.__gps_callback, 4)
         self.subscription_aru = self.create_subscription(Float64MultiArray, '/akillipaket/Aruco/Marker/relativePose', self.__aru_callback, 1)
         self.state_estimator_publisher_ = self.create_publisher(Float64MultiArray, '/akillipaket/Kalman/States', 4)
@@ -20,7 +22,7 @@ class KalmanFilter(Node):
         self.gps_variance = 2.0
         self.imu_accel_variance = 0.01
         self.imu_gyro_variance = 0.0015
-        self.mag_variance = 0.015
+        self.imu_yaw_variance = 0.015
         self.aru_variance = 0.0001
         self.aru_yaw_var = 0.1
         gammat = 10
@@ -45,12 +47,12 @@ class KalmanFilter(Node):
                            [0.0, 0.0, 0.0, self.aru_yaw_var]])
 
 
-        Qt_imu = np.array([[self.imu_accel_variance, 0.0, 0.0, 0.0],
-                           [0.0, self.imu_accel_variance, 0.0, 0.0],
-                           [0.0, 0.0, self.imu_accel_variance, 0.0],
-                           [0.0, 0.0, 0.0, self.imu_gyro_variance]])
+        Qt_imu = np.array([[self.imu_accel_variance, 0.0, 0.0, 0.0, 0.0],
+                           [0.0, self.imu_accel_variance, 0.0, 0.0, 0.0],
+                           [0.0, 0.0, self.imu_accel_variance, 0.0, 0.0],
+                           [0.0, 0.0, 0.0,   self.imu_yaw_variance, 0.0],
+                           [0.0, 0.0, 0.0, 0.0, self.imu_gyro_variance]])
 
-        Qt_mag = np.array([[self.mag_variance]])
 
         P0 = np.array([[50,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0],
                        [ 0, 50,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0],
@@ -67,7 +69,7 @@ class KalmanFilter(Node):
                        [ 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  0],
                        [ 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1]])
 
-        self.kalman_ = State_Estimation(P0, gammat, gammar, Qt_gps, Qt_imu, Qt_aru, Qt_aru2, Qt_mag)
+        self.kalman_ = State_Estimation(P0, gammat, gammar, Qt_gps, Qt_imu, Qt_aru, Qt_aru2)
         self.state_msg = Float64MultiArray()
         self.timer = self.create_timer(self.dt, self.__timer_callback)
         self.r = 0.0
@@ -106,24 +108,17 @@ class KalmanFilter(Node):
             return heading
 
 
-    def __mag_callback(self, msg):
-        #self.get_logger().info('Magnetometer Correction')
-        heading = self.__heading_handler(msg.data*np.pi/180)
-        zt = np.array([[heading]])
-        self.kalman_.MAG_Update(zt)
-
-
     def __imu_callback(self, msg):
         #self.get_logger().info('IMU Correction')
         accel = np.array([[msg.linear_acceleration.x], [msg.linear_acceleration.y], [msg.linear_acceleration.z]])
         angular_rates  = np.array([[msg.angular_velocity.x], [msg.angular_velocity.y], [msg.angular_velocity.z]])
-        euler_angles = np.array([[msg.orientation.x], [msg.orientation.y], [self.kalman_.xt[9,0]]])
+        phi, theta, psi = quaternion_to_euler_angle(msg.orientation.w, msg.orientation.x, msg.orientation.y, msg.orientation.z)
         self.r = angular_rates[2,0]
 
-        accel = body2earth_transformation(euler_angles, accel)
-        _,_,yaw_rate = body2earth_rate_transformation(euler_angles, angular_rates)
-        zt = np.array([[accel[0,0]],[accel[1,0]],[accel[2,0]],[angular_rates[2,0]]])
-        self.kalman_.IMU_Update(zt)
+        accel = body2earth_transformation(np.array([[phi],[theta],[psi]]), accel)
+        _,_,yaw_rate = body2earth_rate_transformation(np.array([[phi],[theta],[psi]]), angular_rates)
+        zt = np.array([[accel[0,0]],[accel[1,0]],[accel[2,0]],[psi],[angular_rates[2,0]]])
+        self.kalman_.IMU2_Update(zt)
 
 
     def __gps_callback(self, msg):

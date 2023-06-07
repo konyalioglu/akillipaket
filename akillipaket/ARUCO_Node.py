@@ -4,20 +4,21 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
 import numpy as np
-import math
+import math, time
 from std_msgs.msg import Float64MultiArray
+from .utils import *
 
 
 class ArucoNode(Node):
 
     def __init__(self):
         super().__init__('aruco_node')
-        self.subscription = self.create_subscription(Image, '/akillipaket/image', self.arucoCallback,  4)
+        self.subscription = self.create_subscription(Image, '/akillipaket/image', self.arucoCallback, 1)
 
         self.camera_pose_publisher = self.create_publisher(Float64MultiArray, '/akillipaket/Aruco/Camera/relativePose', 4)
         #self.camera_attitude_publisher = self.create_publisher(Float64MultiArray, '/akillipaket/Aruco/Camera/relativeAttitude', 4)
         #self.marker_position_publisher = self.create_publisher(Float64MultiArray, '/akillipaket/Aruco/Marker/relativePosition', 4)
-        self.marker_pose_publisher = self.create_publisher(Float64MultiArray, '/akillipaket/Aruco/Marker/relativePose', 4)
+        self.marker_pose_publisher = self.create_publisher(Float64MultiArray, '/akillipaket/Aruco/Marker/relativePose', 1)
 
         self.__path = 'src/akillipaket/calibration/calibrationFiles/'
         self.__camera_matrix = np.loadtxt(self.__path + 'camera_matrix.csv', delimiter=',')
@@ -43,6 +44,13 @@ class ArucoNode(Node):
         #self.marker_attitude_msg = Float64MultiArray()
         self.camera_pose_msg = Float64MultiArray()
         #self.camera_attitude_msg = Float64MultiArray()
+        self.x_pos_prev = 0.0
+        self.y_pos_prev = 0.0
+        self.z_pos_prev = 0.0
+
+        self.time_ref = time.time()
+
+        self.flag = False
 
 
     def wrap(self, angle, offset):
@@ -90,28 +98,45 @@ class ArucoNode(Node):
             ret = aruco.estimatePoseSingleMarkers(corners, self.__size, self.__camera_matrix, self.__camera_distortion)
             rvec, tvec = ret[0][0,0,:], ret[1][0].T
 
-
             R_ct    = np.array(cv.Rodrigues(rvec)[0])
             R_tc    = R_ct.T
 
             roll_marker, pitch_marker, yaw_marker = self.__rotationMatrixToEulerAngles(self.__RFlip@R_tc)
             yaw_marker = self.wrap(yaw_marker, -np.pi/2)
-            #Pose of camera
+
+            xy = rotzB2E(yaw_marker-np.pi/2) @ np.array([[tvec[0,0]], [tvec[1,0]]])
+
             pos_camera = -R_tc@tvec
-            roll_camera, pitch_camera, yaw_camera = self.__rotationMatrixToEulerAngles(self.__RFlip@R_tc)
+            roll_camera, pitch_camera, yaw_camera = self.__rotationMatrixToEulerAngles(self.__RFlip@R_ct)
 
             tvec = self.__RFlip @ tvec
 
-            #self.marker_attitude_msg.data = [roll_marker, pitch_marker, yaw_marker*180/np.pi]
-            self.marker_pose_msg.data = [tvec[0,0], -tvec[1,0], tvec[2,0], yaw_marker*180/np.pi]
-            #self.camera_attitude_msg.data = [roll_camera, pitch_camera, yaw_camera]
-            self.camera_pose_msg.data = [pos_camera[0,0], pos_camera[1,0], pos_camera[2,0], yaw_camera]
+            if self.flag == False:
+                self.flag = True
+                self.x_pos_prev = xy[0,0]
+                self.y_pos_prev = xy[1,0]
+                self.z_pos_prev = tvec[2,0]
 
+                self.time_ref = time.time()
 
-            #self.marker_attitude_publisher.publish(self.marker_attitude_msg)
-            self.marker_pose_publisher.publish(self.marker_pose_msg)
-            #self.camera_attitude_publisher.publish(self.camera_attitude_msg)
-            self.camera_pose_publisher.publish(self.camera_pose_msg)
+            else:
+                time_current = time.time()
+                if time_current - self.time_ref < 2:
+                    x_vel = (xy[0,0]-self.x_pos_prev) / (time_current - self.time_ref)
+                    y_vel = (xy[1,0]-self.y_pos_prev) / (time_current - self.time_ref)
+                    z_vel = (tvec[2,0]-self.z_pos_prev) / (time_current - self.time_ref)
+                else:
+                    x_vel = 0.0
+                    y_vel = 0.0
+                    z_vel = 0.0
+
+                self.time_ref = time_current
+
+                self.marker_pose_msg.data = [xy[0,0], xy[1,0], tvec[2,0], x_vel, y_vel, z_vel, yaw_marker*180/np.pi]
+                self.camera_pose_msg.data = [pos_camera[0,0], pos_camera[1,0], pos_camera[2,0], yaw_camera]
+
+                self.marker_pose_publisher.publish(self.marker_pose_msg)
+                self.camera_pose_publisher.publish(self.camera_pose_msg)
 
 
 

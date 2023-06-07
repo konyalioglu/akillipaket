@@ -10,7 +10,6 @@ from sensor_msgs.msg import Imu
 
 class Magnetometer_Node(Node):
 
-
     def __init__(self):
         super().__init__('Magnetometer')
         self.magnetometer_publisher_ = self.create_publisher(Float64MultiArray, '/akillipaket/IMU/Magnetometer', 4)
@@ -18,7 +17,6 @@ class Magnetometer_Node(Node):
         self.magnetometer_msg = Float64MultiArray()
         self.variation = 4.528986*(np.pi/180)
         self.angle_offset = 65
-
 
     def wrap(self, angle, offset):
         if 0 < angle < offset:
@@ -31,6 +29,7 @@ class Magnetometer_Node(Node):
         else:
             yaw = angle - offset
             return yaw
+
 
 
     def sensor_callback(self):
@@ -48,6 +47,16 @@ class Magnetometer_Node(Node):
 
             self.magnetometer_publisher_.publish(self.magnetometer_msg)
             self.get_logger().info('Publishing: "%s"' % yaw)
+
+
+
+
+
+
+
+
+
+
 
 
 

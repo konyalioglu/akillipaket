@@ -82,3 +82,32 @@ def euler_rate2body_rate(angles, rates):
     r = vec[2,0]
 
     return np.array([[p],[q],[r]])
+
+
+def quaternion_to_euler_angle(w, x, y, z):
+     ysqr = y * y
+
+     t0 = +2.0 * (w * x + y * z)
+     t1 = +1.0 - 2.0 * (x * x + ysqr)
+     X  = np.arctan2(t0, t1)
+
+     t2 = +2.0 * (w * y - z * x)
+     t2 = +1.0 if t2 > +1.0 else t2
+     t2 = -1.0 if t2 < -1.0 else t2
+     Y  = np.arcsin(t2)
+
+     t3 = +2.0 * (w * z + x * y)
+     t4 = +1.0 - 2.0 * (ysqr + z * z)
+     Z  = np.arctan2(t3, t4)
+
+     return X, Y, Z
+
+
+def euler_to_quaternion(phi, theta, psi):
+
+    qx = np.sin(phi/2) * np.cos(theta/2) * np.cos(psi/2) - np.cos(phi/2) * np.sin(theta/2) * np.sin(psi/2)
+    qy = np.cos(phi/2) * np.sin(theta/2) * np.cos(psi/2) + np.sin(phi/2) * np.cos(theta/2) * np.sin(psi/2)
+    qz = np.cos(phi/2) * np.cos(theta/2) * np.sin(psi/2) - np.sin(phi/2) * np.sin(theta/2) * np.cos(psi/2)
+    qw = np.cos(phi/2) * np.cos(theta/2) * np.cos(psi/2) + np.sin(phi/2) * np.sin(theta/2) * np.sin(psi/2)
+
+    return qx, qy, qz, qw

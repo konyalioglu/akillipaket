@@ -1,9 +1,10 @@
 import numpy as np
 
+
 class State_Estimation:
 
+        def __init__(self, P0, gamma_t, gamma_r, var_r, var_b):
 
-        def __init__(self, P0, gamma, Qt_gps, Qt_imu, Qt_mag, Qt_aru):
             self.Ht_GPS = np.array([[1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
                                     [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
                                     [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]])
@@ -13,15 +14,30 @@ class State_Estimation:
                                     [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0],
                                     [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0]])
 
+            self.Ht_IMU2= np.array([[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                                    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                                    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                                    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0],
+                                    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0]])
+
+            self.Ht_ARU2= np.array([[1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                                    [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                                    [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                                    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0]])
+
             self.Ht_ARU = np.array([[1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
                                     [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
                                     [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                                    [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                                    [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                                    [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
                                     [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0]])
 
             self.Ht_MAG = np.array([[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0]])
 
             self.xt = np.array([[0.0],[0.0],[0.0],[0.0],[0.0],[0.0],[0.0],[0.0],[0.0],[0.0],[0.0],[0.0],[0.0],[0.0]])
-            self.gamma = gamma
+            self.gamma_t = gamma_t
+            self.gamma_r = gamma_r
             self.P = np.array(P0)
 
             self.F = np.eye(14)
@@ -33,6 +49,7 @@ class State_Estimation:
             self.R_gps = Qt_gps
             self.R_mag = Qt_mag
             self.R_aru = Qt_aru
+            self.R_aru2= Qt_aru2
 
 
         def KF_Predict(self, dt):
@@ -52,12 +69,12 @@ class State_Estimation:
             self.F[5,8] = dt
             self.F[9,10]= dt
 
-            self.wk[0:3] = dt**3 / 6 * self.B * self.gamma
-            self.wk[3:6] = dt**2 / 2 * self.B * self.gamma
-            self.wk[6:9] = dt * self.B * self.gamma
-            self.wk[9]   = dt**2 / 2 * self.gamma
-            self.wk[10]  = dt * self.gamma
-            self.wk[11:14] = dt * self.B * self.gamma
+            self.wk[0:3] = dt**3 / 6 * self.B * self.gamma_t
+            self.wk[3:6] = dt**2 / 2 * self.B * self.gamma_t
+            self.wk[6:9] = dt * self.B * self.gamma_t
+            self.wk[9]   = dt**2 / 2 * self.gamma_r
+            self.wk[10]  = dt * self.gamma_r
+            self.wk[11:14] = dt * self.B * self.gamma_t
 
             Q = self.wk @ np.transpose(self.wk)
 
@@ -82,6 +99,14 @@ class State_Estimation:
             return self.xt
 
 
+        def IMU2_Update(self, zt):
+            St = self.Ht_IMU2 @ self.P @ np.transpose(self.Ht_IMU2) + self.R_imu
+            Kt = self.P @ np.transpose(self.Ht_IMU2) @ np.linalg.inv(St)
+            self.xt = self.xt + Kt @ (zt - self.Ht_IMU2 @ self.xt)
+            self.P = (np.eye(14) - Kt @ self.Ht_IMU2) @ self.P
+            return self.xt
+
+
         def MAG_Update(self, zt):
             St = self.Ht_MAG @ self.P @ np.transpose(self.Ht_MAG) + self.R_mag
             Kt = self.P @ np.transpose(self.Ht_MAG) @ np.linalg.inv(St)
@@ -95,4 +120,12 @@ class State_Estimation:
             Kt = self.P @ np.transpose(self.Ht_ARU) @ np.linalg.inv(St)
             self.xt = self.xt + Kt @ (zt - self.Ht_ARU @ self.xt)
             self.P = (np.eye(14) - Kt @ self.Ht_ARU) @ self.P
+            return self.xt
+
+
+        def ARU2_Update(self, zt):
+            St = self.Ht_ARU2 @ self.P @ np.transpose(self.Ht_ARU2) + self.R_aru2
+            Kt = self.P @ np.transpose(self.Ht_ARU2) @ np.linalg.inv(St)
+            self.xt = self.xt + Kt @ (zt - self.Ht_ARU2 @ self.xt)
+            self.P = (np.eye(14) - Kt @ self.Ht_ARU2) @ self.P
             return self.xt
