@@ -93,4 +93,4 @@ Common nodes are
 
 ## Arduino serial communication
 
-As it can be seen in the first figure, an Arduino Uno is installed to be used for driving BLDC motors and for RC controller communication. To accomplish that, the 'arduino/arduino_uno.ino' code is embedded to MC.
+As it can be seen in the first figure, an Arduino Uno is installed to be used for driving BLDC motors and for RC controller communication. To accomplish that, the 'arduino/arduino_uno.ino' code is embedded to the MC.
